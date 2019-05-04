@@ -3,6 +3,7 @@
 #include <string>
 #include <fstream>
 #include <algorithm>
+#include <queue>
 
 //used in greedy apprach
 struct Item
@@ -11,6 +12,14 @@ struct Item
     int value = 0;
     double itemRatio = 0;
     int index = 0;
+
+};
+//Comapre function used by the priority queue for heap based setup
+struct CompareRatio {
+    bool operator()(Item const& i1, Item const& i2)
+    {
+        return i1.itemRatio < i2.itemRatio;
+    }
 };
 
 std::vector<int> createWeightList(char file_num);
@@ -18,7 +27,7 @@ std::vector<int> createValueList(char file_num);
 int createCapacityValue(char capacity);
 std::vector<std::vector<int>> knapsack(int capactiy, std::vector<int> values, std::vector<int> weights, int numItems);
 std::vector<int> getOptimalSet(std::vector<int> values, std::vector<int> weights, int capacity, std::vector<std::vector<int>> sackTable);
-std::vector<int> greedyApproach(int capacity, std::vector<int> values, std::vector<int> weights, int numItems,  double &finalValue);
+std::vector<int> greedyApproach(int capacity, std::vector<int> values, std::vector<int> weights, int numItems,  double &finalValue, bool useHeap);
 
 
 int main() {
@@ -54,7 +63,7 @@ int main() {
     //final value is passed by reference through greedy solution
     double finalValue = 0.0;
     //results list of optimal items index
-    std::vector<int> greedyOptimal = greedyApproach(capacity, values, weights, numItems, finalValue);
+    std::vector<int> greedyOptimal = greedyApproach(capacity, values, weights, numItems, finalValue, false);
     std::cout << "Greed Solution with " << numItems << " items: ";
     std::cout << finalValue;
     std::cout << std::endl;
@@ -108,6 +117,11 @@ std::vector<int> createWeightList(char file_num)
     inputFile[2] = file_num;
     std::ifstream file;
     file.open(inputFile);
+    if( ! file.is_open())
+    {
+        std::cout << "Error: input fine not found.\n";
+        exit(1);
+    }
     int tempNum;
     while( file >> tempNum )
     {
@@ -128,6 +142,11 @@ std::vector<int> createValueList(char file_num)
     inputFile[2] = file_num;
     std::ifstream file;
     file.open(inputFile);
+    if( ! file.is_open())
+    {
+        std::cout << "Error: input fine not found.\n";
+        exit(1);
+    }
     int tempNum;
     while( file >> tempNum )
     {
@@ -145,6 +164,11 @@ int createCapacityValue(char capacity)
     inputFile[2] = capacity;
     std::ifstream file;
     file.open(inputFile);
+    if( ! file.is_open())
+    {
+        std::cout << "Error: input fine not found.\n";
+        exit(1);
+    }
     int tempNum;
     file >> tempNum;
     file.close();
@@ -154,6 +178,7 @@ int createCapacityValue(char capacity)
 
 std::vector<int> getOptimalSet(std::vector<int> values, std::vector<int> weights, int capacity, std::vector<std::vector<int>> sackTable)
 {
+
     //finds the optimal set of items to choose
     //returns a vector of those items number in list
     std::vector<int> solutionSet;
@@ -178,7 +203,7 @@ bool compareByRatio(Item a, Item b)
     return a.itemRatio > b.itemRatio;
 }
 
-std::vector<int> greedyApproach(int capacity, std::vector<int> values, std::vector<int> weights, int numItems, double &finalValue)
+std::vector<int> greedyApproach(int capacity, std::vector<int> values, std::vector<int> weights, int numItems, double &finalValue, bool useHeap)
 {
     //this could probably be done more efficiently but  ¯\_(ツ)_/¯
     std::vector<Item> itemsList;
@@ -193,24 +218,53 @@ std::vector<int> greedyApproach(int capacity, std::vector<int> values, std::vect
         itemsList.push_back(item);
     }
     //sort the list of item.
-    std::sort(itemsList.begin(), itemsList.end(), compareByRatio);
+    //if useHeap is set to true, a heap will be used
+    //otherwise a built in sort function is used
+    if( ! useHeap ) {
+        std::sort(itemsList.begin(), itemsList.end(), compareByRatio);
 
-    //adds the items that can fit into knapsack up until the capacity is reached
-    //also keeps a running total of the values available
-    std::vector<int> selectedList;
-    //selectedList is given the index of optimal item set
-    int curWeight = 0;
-    for(int i = 0; i < numItems; i++)
-    {
-        if( curWeight + itemsList[i].weight <= capacity)
-        {
-            curWeight += itemsList[i].weight;
-            finalValue += itemsList[i].value;
-            selectedList.push_back(itemsList[i].index);
+        //adds the items that can fit into knapsack up until the capacity is reached
+        //also keeps a running total of the values available
+        std::vector<int> selectedList;
+        //selectedList is given the index of optimal item set
+        int curWeight = 0;
+        for (int i = 0; i < numItems; i++) {
+            if (curWeight + itemsList[i].weight <= capacity) {
+                curWeight += itemsList[i].weight;
+                finalValue += itemsList[i].value;
+                selectedList.push_back(itemsList[i].index);
+            } else
+                break;
         }
-        else
-            break;
+
+        return selectedList;
     }
 
-    return selectedList;
+    else
+    {
+        //A priority queue is used, which has the runtime of a heap, as far as what i found online says
+        std::priority_queue<Item, std::vector<Item>, CompareRatio> heap;
+        while( ! itemsList.empty())
+        {
+            heap.push(itemsList.back());
+            itemsList.pop_back();
+        }
+        //once the queue is created, the comparison is run very similar to the previous one
+        std::vector<int>selectedList;
+        int curWeight = 0;
+        while( ! heap.empty())
+        {
+            if(curWeight + heap.top().weight <= capacity)
+            {
+                curWeight += heap.top().weight;
+                finalValue += heap.top().value;
+                selectedList.push_back(heap.top().index);
+                heap.pop();
+            }
+            else
+                break;
+        }
+        return selectedList;
+    }
+
 }
