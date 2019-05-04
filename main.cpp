@@ -2,12 +2,24 @@
 #include <vector>
 #include <string>
 #include <fstream>
+#include <algorithm>
+
+//used in greedy apprach
+struct Item
+{
+    int weight = 0;
+    int value = 0;
+    double itemRatio = 0;
+    int index = 0;
+};
 
 std::vector<int> createWeightList(char file_num);
 std::vector<int> createValueList(char file_num);
 int createCapacityValue(char capacity);
 std::vector<std::vector<int>> knapsack(int capactiy, std::vector<int> values, std::vector<int> weights, int numItems);
 std::vector<int> getOptimalSet(std::vector<int> values, std::vector<int> weights, int capacity, std::vector<std::vector<int>> sackTable);
+std::vector<int> greedyApproach(int capacity, std::vector<int> values, std::vector<int> weights, int numItems,  double &finalValue);
+
 
 int main() {
     std::cout << "Enter which test set to run on (0 or 1): " << std::endl;
@@ -37,6 +49,22 @@ int main() {
     //sets iter to second element before starting loop
     for(iter++; iter != optimalSet.rend(); iter++)
         std::cout << ", " << *iter;
+    std::cout << " }" << std::endl;
+
+    //final value is passed by reference through greedy solution
+    double finalValue = 0.0;
+    //results list of optimal items index
+    std::vector<int> greedyOptimal = greedyApproach(capacity, values, weights, numItems, finalValue);
+    std::cout << "Greed Solution with " << numItems << " items: ";
+    std::cout << finalValue;
+    std::cout << std::endl;
+    //sorts indexes in order to print
+    std::sort(greedyOptimal.begin(), greedyOptimal.end());
+    std::vector<int>::iterator greedyIter = greedyOptimal.begin();
+    std::cout << "{ ";
+    std::cout << *greedyIter;
+    for(greedyIter++; greedyIter != greedyOptimal.end(); greedyIter++)
+        std::cout << ", " << *greedyIter;
     std::cout << " }" << std::endl;
 
     return 0;
@@ -81,9 +109,8 @@ std::vector<int> createWeightList(char file_num)
     std::ifstream file;
     file.open(inputFile);
     int tempNum;
-    while( ! file.eof() )
+    while( file >> tempNum )
     {
-        file >> tempNum;
         returnWeights.push_back(tempNum);
     }
     file.close();
@@ -102,9 +129,8 @@ std::vector<int> createValueList(char file_num)
     std::ifstream file;
     file.open(inputFile);
     int tempNum;
-    while( ! file.eof() )
+    while( file >> tempNum )
     {
-        file >> tempNum;
         returnValues.push_back(tempNum);
     }
     file.close();
@@ -144,4 +170,47 @@ std::vector<int> getOptimalSet(std::vector<int> values, std::vector<int> weights
         i--;
     }
     return solutionSet;
+}
+
+bool compareByRatio(Item a, Item b)
+{
+    //simple compare function to be used to sort the struct in greedy approach
+    return a.itemRatio > b.itemRatio;
+}
+
+std::vector<int> greedyApproach(int capacity, std::vector<int> values, std::vector<int> weights, int numItems, double &finalValue)
+{
+    //this could probably be done more efficiently but  ¯\_(ツ)_/¯
+    std::vector<Item> itemsList;
+    //stores struct Item in a vector holding the index and value/weight ratio
+    for(int i = 0; i < values.size(); i++)
+    {
+        Item item;
+        item.index = i +1;
+        item.itemRatio = (double)values[i]/weights[i];
+        item.weight = weights[i];
+        item.value = values[i];
+        itemsList.push_back(item);
+    }
+    //sort the list of item.
+    std::sort(itemsList.begin(), itemsList.end(), compareByRatio);
+
+    //adds the items that can fit into knapsack up until the capacity is reached
+    //also keeps a running total of the values available
+    std::vector<int> selectedList;
+    //selectedList is given the index of optimal item set
+    int curWeight = 0;
+    for(int i = 0; i < numItems; i++)
+    {
+        if( curWeight + itemsList[i].weight <= capacity)
+        {
+            curWeight += itemsList[i].weight;
+            finalValue += itemsList[i].value;
+            selectedList.push_back(itemsList[i].index);
+        }
+        else
+            break;
+    }
+
+    return selectedList;
 }
