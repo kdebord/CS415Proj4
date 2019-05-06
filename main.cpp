@@ -4,6 +4,7 @@
 #include <fstream>
 #include <algorithm>
 #include <queue>
+#include <math.h>
 
 //used in greedy apprach
 struct Item
@@ -28,9 +29,14 @@ int createCapacityValue(char capacity);
 std::vector<std::vector<int>> knapsack(int capactiy, std::vector<int> values, std::vector<int> weights, int numItems);
 std::vector<int> getOptimalSet(std::vector<int> values, std::vector<int> weights, int capacity, std::vector<std::vector<int>> sackTable);
 std::vector<int> greedyApproach(int capacity, std::vector<int> values, std::vector<int> weights, int numItems,  double &finalValue, bool useHeap);
-
+int numOfBitsInNum(int num);
 
 int main() {
+
+    std::cout << numOfBitsInNum(10) << std::endl;
+    std::cout << numOfBitsInNum(16) << std::endl;
+
+
     std::cout << "Enter which test set to run on (0 or 1): " << std::endl;
     char numSelection;
     std::cin >> numSelection;
@@ -267,4 +273,9 @@ std::vector<int> greedyApproach(int capacity, std::vector<int> values, std::vect
         return selectedList;
     }
 
+}
+
+int numOfBitsInNum(int num)
+{
+    return ceil( log2 ( num + 1 ) );
 }
