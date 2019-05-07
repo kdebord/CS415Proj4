@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <queue>
 #include <math.h>
+#include <chrono>
 
 //used in greedy apprach
 struct Item
@@ -23,9 +24,9 @@ struct CompareRatio {
     }
 };
 
-std::vector<int> createWeightList(char file_num);
-std::vector<int> createValueList(char file_num);
-int createCapacityValue(char capacity);
+std::vector<int> createWeightList(std::string file_num);
+std::vector<int> createValueList(std::string file_num);
+int createCapacityValue(std::string capacity);
 std::vector<std::vector<int>> knapsack(int capactiy, std::vector<int> values, std::vector<int> weights, int numItems);
 std::vector<int> getOptimalSet(std::vector<int> values, std::vector<int> weights, int capacity, std::vector<std::vector<int>> sackTable);
 std::vector<int> greedyApproach(int capacity, std::vector<int> values, std::vector<int> weights, int numItems,  double &finalValue, bool useHeap);
@@ -33,30 +34,45 @@ int numOfBitsInNum(int num);
 
 int main() {
 
-    std::cout << numOfBitsInNum(10) << std::endl;
-    std::cout << numOfBitsInNum(16) << std::endl;
+    std::string capacity_file, weights_file, value_file;
 
+    /*
+    std::cout << "Enter file containing the capacity: ";
+    std::cin >> capacity_file;
+    std::cout << "Enter file containing the weights: ";
+    std::cin >> weights_file;
+    std::cout << "Enter file containing the values: ";
+    std::cin >> value_file;
+     */
 
-    std::cout << "Enter which test set to run on (0 or 1): " << std::endl;
-    char numSelection;
-    std::cin >> numSelection;
+    capacity_file = "p01_c.txt";
+    weights_file = "p01_w.txt";
+    value_file = "p01_v.txt";
 
     //parses files to create needed lists of weight and values as well as capacity
-    std::vector<int> weights = createWeightList(numSelection);
-    std::vector<int> values = createValueList(numSelection);
-    int capacity = createCapacityValue(numSelection);
+    std::vector<int> weights = createWeightList(weights_file);
+    std::vector<int> values = createValueList(value_file);
+    int capacity = createCapacityValue(capacity_file);
 
     int numItems = weights.size();
+
+    std::cout << "Knapsack capacity = "<< capacity << ". Total number of items = " << weights.size() << "\n\n";
+
+    //clock time to measure speed
+    auto start = std::chrono::high_resolution_clock::now();
     //table is stored as vector holding vectors to make passing through function args easier
     //can be treated as a 2d array once created
     std::vector<std::vector<int>> sackTable = knapsack(capacity, values, weights, numItems);
-    std::cout << "Knapsack Solution with " << numItems << " items: ";
+    //create list of optimal items to grab
+    std::vector<int> optimalSet = getOptimalSet(values, weights, capacity, sackTable);
+    auto end = std::chrono::high_resolution_clock::now();
+
+    auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+    std::cout << "Traditional Dynamic Programming Optimal Value: ";
     std::cout << sackTable[numItems][capacity];
     std::cout << std::endl;
 
-    //create list of optimal items to grab
-    std::vector<int> optimalSet = getOptimalSet(values, weights, capacity, sackTable);
-
+    std::cout << "Traditional Dynamic Programming Optimal subset: ";
     //some iterator work to not have to deal with extra comma at end of list
     std::vector<int>::reverse_iterator iter = optimalSet.rbegin();
     std::cout << "{ ";
@@ -66,14 +82,18 @@ int main() {
         std::cout << ", " << *iter;
     std::cout << " }" << std::endl;
 
+    std::cout << "Traditional Dynamic Programming Time Taken : " << duration << " nanoseconds\n";
+
     //final value is passed by reference through greedy solution
     double finalValue = 0.0;
     //results list of optimal items index
+    std::cout << std::endl;
     std::vector<int> greedyOptimal = greedyApproach(capacity, values, weights, numItems, finalValue, false);
-    std::cout << "Greed Solution with " << numItems << " items: ";
+    std::cout << "Greedy Approach Optimal Value: ";
     std::cout << finalValue;
     std::cout << std::endl;
     //sorts indexes in order to print
+    std::cout << "Greedy Approach Optimal Subset: ";
     std::sort(greedyOptimal.begin(), greedyOptimal.end());
     std::vector<int>::iterator greedyIter = greedyOptimal.begin();
     std::cout << "{ ";
@@ -113,16 +133,14 @@ std::vector<std::vector<int>> knapsack(int capactiy, std::vector<int> values, st
     return sackTable;
 }
 
-std::vector<int> createWeightList(char file_num)
+std::vector<int> createWeightList(std::string file_num)
 {
     //opens file based off of given which file asked for
     //parses file line by line and inputs to vector
     //PS: I really like vectors
     std::vector<int> returnWeights;
-    std::string inputFile = "p00_w.txt";
-    inputFile[2] = file_num;
     std::ifstream file;
-    file.open(inputFile);
+    file.open(file_num);
     if( ! file.is_open())
     {
         std::cout << "Error: input fine not found.\n";
@@ -139,15 +157,13 @@ std::vector<int> createWeightList(char file_num)
 
 }
 
-std::vector<int> createValueList(char file_num)
+std::vector<int> createValueList(std::string file_num)
 {
     //opens file based off of given which file asked for
     //parses file line by line and inputs to vector
     std::vector<int> returnValues;
-    std::string inputFile = "p00_v.txt";
-    inputFile[2] = file_num;
     std::ifstream file;
-    file.open(inputFile);
+    file.open(file_num);
     if( ! file.is_open())
     {
         std::cout << "Error: input fine not found.\n";
@@ -163,13 +179,11 @@ std::vector<int> createValueList(char file_num)
     return returnValues;
 }
 
-int createCapacityValue(char capacity)
+int createCapacityValue(std::string capacity)
 {
     //Same as other create functions but only needs the single line in file
-    std::string inputFile = "p00_c.txt";
-    inputFile[2] = capacity;
     std::ifstream file;
-    file.open(inputFile);
+    file.open(capacity);
     if( ! file.is_open())
     {
         std::cout << "Error: input fine not found.\n";
