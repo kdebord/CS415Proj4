@@ -29,10 +29,13 @@ std::vector<int> createWeightList(std::string file_num);
 std::vector<int> createValueList(std::string file_num);
 int createCapacityValue(std::string capacity);
 std::vector<std::vector<int>> knapsack(int capactiy, std::vector<int> values, std::vector<int> weights, int numItems);
+std::vector<std::vector<int>> hashedKnapsack(int capactiy, std::vector<int> values, std::vector<int> weights, int numItems);
 std::vector<int> getOptimalSet(std::vector<int> values, std::vector<int> weights, int capacity, std::vector<std::vector<int>> sackTable);
 std::vector<int> greedyApproach(int capacity, std::vector<int> values, std::vector<int> weights, int numItems,  double &finalValue, bool useHeap);
 int numOfBitsInNum(int num);
-int findSlot(int i, int j, int n, int W);
+int findSlot(int i, int j, int n, int W, int array[], int key);
+void set(int i, int j, int n, int W, int array[], int key);
+int lookup(int i, int j, int n, int W, int array[], int key);
 std::string toBinary(int n, int length);
 
 int main() {
@@ -48,9 +51,9 @@ int main() {
     std::cin >> value_file;
      */
 
-    capacity_file = "p08_c.txt";
-    weights_file = "p08_w.txt";
-    value_file = "p08_v.txt";
+    capacity_file = "p01_c.txt";
+    weights_file = "p01_w.txt";
+    value_file = "p01_v.txt";
 
     //parses files to create needed lists of weight and values as well as capacity
     std::vector<int> weights = createWeightList(weights_file);
@@ -160,6 +163,34 @@ std::vector<std::vector<int>> knapsack(int capactiy, std::vector<int> values, st
                sackTable[i][w] = sackTable[i-1][w];
        }
    }
+    //return final vector array
+    return sackTable;
+}
+
+std::vector<std::vector<int>> hashedKapsack(int capactiy, std::vector<int> values, std::vector<int> weights, int numItems)
+{
+    //creating of "2d array" using vectors
+    std::vector<std::vector<int>> sackTable;
+    for(int i = 0; i < numItems + 1; i++) {
+        sackTable.push_back(std::vector<int>());
+        for(int j = 0; j < capactiy + 1; j++) {
+            sackTable[i].push_back(0);
+        }
+    }
+
+    //Build 2d array from bottom up
+    for(int i = 0; i <= numItems; i++)
+    {
+        for(int w = 0; w <= capactiy; w++)
+        {
+            if( i == 0 || w == 0)
+                sackTable[i][w] = 0;
+            else if (weights[i-1] <= w)
+                sackTable[i][w] = std::max(values[i-1] + sackTable[i-1][w-weights[i-1]], sackTable[i-1][w]);
+            else
+                sackTable[i][w] = sackTable[i-1][w];
+        }
+    }
     //return final vector array
     return sackTable;
 }
@@ -341,13 +372,37 @@ std::string toBinary(int n, int length)
 }
 
 
-int findSlot(int i, int j, int n, int W)
+int findSlot(int i, int j, int n, int W, int array[], int key)
 {
     int const numBits1 = numOfBitsInNum(n);
     int const numBits2 = numOfBitsInNum(W);
     std::string binary1 = toBinary(i, numBits1);
     std::string binary2 = toBinary(j, numBits2);
     std::string r = "1" + binary1 + binary2;
-    int slotNum = ( std::stoi(r) % n*W);
+    int slotNum = ( std::stoi(r) % 2*W);
+    while(array[slotNum] != -1 && array[slotNum] != key)
+        slotNum = (slotNum + 1) % 2*W;
     return slotNum;
+}
+
+int lookup(int i, int j, int n, int W, int array[], int key)
+{
+    int slotNum = findSlot(i, j, n, W, array, key);
+    if(array[slotNum] != -1)
+        return array[slotNum];
+    else
+        return -1;
+}
+
+void set(int i, int j, int n, int W, int array[], int key)
+{
+    int slotNum = findSlot(i, j, n, W, array, key);
+    if(array[slotNum] != -1)
+    {
+        array[slotNum] = key;
+        return;
+    }
+    else
+        std::cout << "hash table is full\n" << std::endl;
+        return;
 }
