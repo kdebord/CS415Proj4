@@ -6,6 +6,7 @@
 #include <queue>
 #include <math.h>
 #include <chrono>
+#include <bitset>
 
 //used in greedy apprach
 struct Item
@@ -31,6 +32,8 @@ std::vector<std::vector<int>> knapsack(int capactiy, std::vector<int> values, st
 std::vector<int> getOptimalSet(std::vector<int> values, std::vector<int> weights, int capacity, std::vector<std::vector<int>> sackTable);
 std::vector<int> greedyApproach(int capacity, std::vector<int> values, std::vector<int> weights, int numItems,  double &finalValue, bool useHeap);
 int numOfBitsInNum(int num);
+int findSlot(int i, int j, int n, int W);
+std::string toBinary(int n, int length);
 
 int main() {
 
@@ -45,14 +48,16 @@ int main() {
     std::cin >> value_file;
      */
 
-    capacity_file = "p01_c.txt";
-    weights_file = "p01_w.txt";
-    value_file = "p01_v.txt";
+    capacity_file = "p08_c.txt";
+    weights_file = "p08_w.txt";
+    value_file = "p08_v.txt";
 
     //parses files to create needed lists of weight and values as well as capacity
     std::vector<int> weights = createWeightList(weights_file);
     std::vector<int> values = createValueList(value_file);
     int capacity = createCapacityValue(capacity_file);
+
+    //testing stuff
 
     int numItems = weights.size();
 
@@ -88,7 +93,10 @@ int main() {
     double finalValue = 0.0;
     //results list of optimal items index
     std::cout << std::endl;
+    auto start2 = std::chrono::high_resolution_clock::now();
     std::vector<int> greedyOptimal = greedyApproach(capacity, values, weights, numItems, finalValue, false);
+    auto end2 = std::chrono::high_resolution_clock::now();
+    auto duration2 = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
     std::cout << "Greedy Approach Optimal Value: ";
     std::cout << finalValue;
     std::cout << std::endl;
@@ -101,6 +109,29 @@ int main() {
     for(greedyIter++; greedyIter != greedyOptimal.end(); greedyIter++)
         std::cout << ", " << *greedyIter;
     std::cout << " }" << std::endl;
+
+    std::cout << "Greedy Approach Time Taken: " << duration2 << " nanoseconds\n";
+
+    finalValue = 0.0;
+    std::cout << std::endl;
+    auto start3 = std::chrono::high_resolution_clock::now();
+    greedyOptimal = greedyApproach(capacity, values, weights, numItems, finalValue, true);
+    auto end3 = std::chrono::high_resolution_clock::now();
+    auto duration3 = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+    std::cout << "Heap-Based Greedy Approach Optimal Value: ";
+    std::cout << finalValue;
+    std::cout << std::endl;
+    //sorts indexes in order to print
+    std::cout << "Heap-Based Greedy Approach Optimal Subset: ";
+    std::sort(greedyOptimal.begin(), greedyOptimal.end());
+    greedyIter = greedyOptimal.begin();
+    std::cout << "{ ";
+    std::cout << *greedyIter;
+    for(greedyIter++; greedyIter != greedyOptimal.end(); greedyIter++)
+        std::cout << ", " << *greedyIter;
+    std::cout << " }" << std::endl;
+
+    std::cout << "Heap-Based Greedy Approach Time Taken: " << duration3 << " nanoseconds\n";
 
     return 0;
 }
@@ -292,4 +323,31 @@ std::vector<int> greedyApproach(int capacity, std::vector<int> values, std::vect
 int numOfBitsInNum(int num)
 {
     return ceil( log2 ( num + 1 ) );
+}
+
+std::string toBinary(int n, int length)
+{
+    std::string r;
+    while(n != 0)
+    {
+        r = (n%2 == 0 ? "0":"1") + r;
+        n/=2;
+    }
+    while(r.length() != length)
+    {
+        r = "0" + r;
+    }
+    return r;
+}
+
+
+int findSlot(int i, int j, int n, int W)
+{
+    int const numBits1 = numOfBitsInNum(n);
+    int const numBits2 = numOfBitsInNum(W);
+    std::string binary1 = toBinary(i, numBits1);
+    std::string binary2 = toBinary(j, numBits2);
+    std::string r = "1" + binary1 + binary2;
+    int slotNum = ( std::stoi(r) % n*W);
+    return slotNum;
 }
