@@ -45,18 +45,13 @@ int main() {
 
     std::string capacity_file, weights_file, value_file;
 
-    /*
+
     std::cout << "Enter file containing the capacity: ";
     std::cin >> capacity_file;
     std::cout << "Enter file containing the weights: ";
     std::cin >> weights_file;
     std::cout << "Enter file containing the values: ";
     std::cin >> value_file;
-     */
-
-    capacity_file = "p01_c.txt";
-    weights_file = "p01_w.txt";
-    value_file = "p01_v.txt";
 
     //parses files to create needed lists of weight and values as well as capacity
     std::vector<int> weights = createWeightList(weights_file);
