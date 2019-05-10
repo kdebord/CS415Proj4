@@ -7,8 +7,9 @@
 #include <math.h>
 #include <chrono>
 #include <bitset>
+#include "gnuplot.h"
 
-//used in greedy apprach
+//used in greedy approach
 struct Item
 {
     int weight = 0;
@@ -37,6 +38,7 @@ int findSlot(int i, int j, int n, int W, int array[], int key);
 void set(int i, int j, int n, int W, int array[], int key);
 int lookup(int i, int j, int n, int W, int array[], int key);
 std::string toBinary(int n, int length);
+void createGreedyApproachGraphs(int capacity, std::vector<int> values, std::vector<int> weights);
 
 int main() {
 
@@ -51,9 +53,9 @@ int main() {
     std::cin >> value_file;
      */
 
-    capacity_file = "p01_c.txt";
-    weights_file = "p01_w.txt";
-    value_file = "p01_v.txt";
+    capacity_file = "p08_c.txt";
+    weights_file = "p08_w.txt";
+    value_file = "p08_v.txt";
 
     //parses files to create needed lists of weight and values as well as capacity
     std::vector<int> weights = createWeightList(weights_file);
@@ -91,6 +93,9 @@ int main() {
     std::cout << " }" << std::endl;
 
     std::cout << "Traditional Dynamic Programming Time Taken : " << duration << " nanoseconds\n";
+
+
+
 
     //final value is passed by reference through greedy solution
     double finalValue = 0.0;
@@ -136,6 +141,8 @@ int main() {
 
     std::cout << "Heap-Based Greedy Approach Time Taken: " << duration3 << " nanoseconds\n";
 
+    createGreedyApproachGraphs(capacity, values, weights);
+
     return 0;
 }
 
@@ -167,24 +174,19 @@ std::vector<std::vector<int>> knapsack(int capactiy, std::vector<int> values, st
     return sackTable;
 }
 
-std::vector<std::vector<int>> hashedKapsack(int capactiy, std::vector<int> values, std::vector<int> weights, int numItems)
+std::vector<std::vector<int>> hashedKnapsack(int capactiy, std::vector<int> values, std::vector<int> weights, int numItems)
 {
-    //creating of "2d array" using vectors
-    std::vector<std::vector<int>> sackTable;
-    for(int i = 0; i < numItems + 1; i++) {
-        sackTable.push_back(std::vector<int>());
-        for(int j = 0; j < capactiy + 1; j++) {
-            sackTable[i].push_back(0);
-        }
-    }
-
+    /*
+    //creating the hash table
+    int hashtable[2*weights.size()];
     //Build 2d array from bottom up
     for(int i = 0; i <= numItems; i++)
     {
         for(int w = 0; w <= capactiy; w++)
         {
             if( i == 0 || w == 0)
-                sackTable[i][w] = 0;
+                set(i,w,numItems,capactiy,hashtable,0);
+
             else if (weights[i-1] <= w)
                 sackTable[i][w] = std::max(values[i-1] + sackTable[i-1][w-weights[i-1]], sackTable[i-1][w]);
             else
@@ -193,6 +195,7 @@ std::vector<std::vector<int>> hashedKapsack(int capactiy, std::vector<int> value
     }
     //return final vector array
     return sackTable;
+     */
 }
 
 std::vector<int> createWeightList(std::string file_num)
@@ -405,4 +408,40 @@ void set(int i, int j, int n, int W, int array[], int key)
     else
         std::cout << "hash table is full\n" << std::endl;
         return;
+}
+
+void createGreedyApproachGraphs(int capacity, std::vector<int> values, std::vector<int> weights)
+{
+    std::ofstream outputFile;
+    outputFile.open("greedy_nums.R");
+    outputFile << "number_of_items built_in_time heap_time\n";
+    double finalVal;
+    for(int i = 0; i < values.size(); i++)
+    {
+        finalVal = 0;
+        outputFile << i << " ";
+        std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
+        greedyApproach(capacity, values,weights,i,finalVal, false);
+        std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+        outputFile << duration << " ";
+        start = std::chrono::high_resolution_clock::now();
+        greedyApproach(capacity, values,weights,i,finalVal, true);
+        end = std::chrono::high_resolution_clock::now();
+        duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+        outputFile << duration << std::endl;
+    }
+    outputFile.close();
+
+    gnuplot p;
+    p("set term png");
+    p("set output 'Greedy_Approach_Graph.png' ");
+    p("set title \"Greedy Approach\" ");
+    p("set xlabel \"Number of Items\" ");
+    p("set ylabel \"Runtime\" ");
+    p("set style line 1 lt 1 lw 3 pt 3 lc rgb \"red\" pi -1 ps 1.5");
+    p("set style line 2 lt 1 lw 3 pt 3 lc rgb \"blue\" pi -1 ps 1.5");
+    p("set pointintervalbox 3");
+    p("plot \'./greedy_nums.R\' u 1:2 with linespoints title \'No Heap\', \'./greedy_nums.R\' u 1:3 with linespoints title \'With Heap\'");
+
 }
