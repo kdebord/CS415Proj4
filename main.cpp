@@ -31,7 +31,7 @@ std::vector<int> createValueList(std::string file_num);
 int createCapacityValue(std::string capacity);
 std::vector<std::vector<int>> knapsack(int capactiy, std::vector<int> values, std::vector<int> weights, int numItems);
 std::vector<std::vector<int>> hashedKnapsack(int capactiy, std::vector<int> values, std::vector<int> weights, int numItems);
-std::vector<int> getOptimalSet(std::vector<int> values, std::vector<int> weights, int capacity, std::vector<std::vector<int>> sackTable);
+std::vector<int> getOptimalSet(std::vector<int> values, std::vector<int> weights, int capacity, std::vector<std::vector<int>> sackTable, int numItems);
 std::vector<int> greedyApproach(int capacity, std::vector<int> values, std::vector<int> weights, int numItems,  double &finalValue, bool useHeap);
 int numOfBitsInNum(int num);
 int findSlot(int i, int j, int n, int W, int array[], int key);
@@ -39,6 +39,7 @@ void set(int i, int j, int n, int W, int array[], int key);
 int lookup(int i, int j, int n, int W, int array[], int key);
 std::string toBinary(int n, int length);
 void createGreedyApproachGraphs(int capacity, std::vector<int> values, std::vector<int> weights);
+void createDynamicApproachGraphs(int capacity, std::vector<int> values, std::vector<int> weights);
 
 int main() {
 
@@ -53,9 +54,9 @@ int main() {
     std::cin >> value_file;
      */
 
-    capacity_file = "p08_c.txt";
-    weights_file = "p08_w.txt";
-    value_file = "p08_v.txt";
+    capacity_file = "p01_c.txt";
+    weights_file = "p01_w.txt";
+    value_file = "p01_v.txt";
 
     //parses files to create needed lists of weight and values as well as capacity
     std::vector<int> weights = createWeightList(weights_file);
@@ -74,7 +75,7 @@ int main() {
     //can be treated as a 2d array once created
     std::vector<std::vector<int>> sackTable = knapsack(capacity, values, weights, numItems);
     //create list of optimal items to grab
-    std::vector<int> optimalSet = getOptimalSet(values, weights, capacity, sackTable);
+    std::vector<int> optimalSet = getOptimalSet(values, weights, capacity, sackTable, numItems);
     auto end = std::chrono::high_resolution_clock::now();
 
     auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
@@ -142,6 +143,7 @@ int main() {
     std::cout << "Heap-Based Greedy Approach Time Taken: " << duration3 << " nanoseconds\n";
 
     createGreedyApproachGraphs(capacity, values, weights);
+    createDynamicApproachGraphs(capacity, values, weights);
 
     return 0;
 }
@@ -261,15 +263,16 @@ int createCapacityValue(std::string capacity)
     return tempNum;
 }
 
-std::vector<int> getOptimalSet(std::vector<int> values, std::vector<int> weights, int capacity, std::vector<std::vector<int>> sackTable)
+std::vector<int> getOptimalSet(std::vector<int> values, std::vector<int> weights, int capacity, std::vector<std::vector<int>> sackTable, int numItems)
 {
 
     //finds the optimal set of items to choose
     //returns a vector of those items number in list
     std::vector<int> solutionSet;
-    int i = weights.size();
+    int i = numItems;
     while (i > 0 && capacity > 0)
     {
+
         if(sackTable[i][capacity] != sackTable[i-1][capacity])
         {
             //this can be changed to solutionSet.push_back(values[i - 1])
@@ -444,4 +447,35 @@ void createGreedyApproachGraphs(int capacity, std::vector<int> values, std::vect
     p("set pointintervalbox 3");
     p("plot \'./greedy_nums.R\' u 1:2 with linespoints title \'No Heap\', \'./greedy_nums.R\' u 1:3 with linespoints title \'With Heap\'");
 
+}
+
+void createDynamicApproachGraphs(int capacity, std::vector<int> values, std::vector<int> weights)
+{
+    std::ofstream outputFile;
+    outputFile.open("dynamic_nums.R");
+    outputFile << "space_taken 2darray space_taken hashtable\n";
+    for(int i = 1; i < values.size(); i++)
+    {
+        std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
+        std::vector<std::vector<int>> sackTable = knapsack(capacity,values,weights,i);
+        getOptimalSet(values,weights,capacity,sackTable, i);
+        std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
+        outputFile << sackTable.size() * sackTable[0].size() << " ";
+        auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+        outputFile << duration << " ";
+        //hashing space taken needs to be put here
+        outputFile << 0 << " ";
+        outputFile << 0 << std::endl;
+    }
+    outputFile.close();
+    gnuplot p;
+    p("set term png");
+    p("set output 'Dynamic_Approach.png' ");
+    p("set title \"Dynamic Approach\" ");
+    p("set xlabel \"Number of Items\" ");
+    p("set ylabel \"Runtime\" ");
+    p("set style line 1 lt 1 lw 3 pt 3 lc rgb \"red\" pi -1 ps 1.5");
+    p("set style line 2 lt 1 lw 3 pt 3 lc rgb \"blue\" pi -1 ps 1.5");
+    p("set pointintervalbox 3");
+    p("plot \'./dynamic_nums.R\' u 1:2 with linespoints title \'No Hashing\', \'./dynamic_nums.R\' u 3:4 with linespoints title \'With Hashing\'");
 }
